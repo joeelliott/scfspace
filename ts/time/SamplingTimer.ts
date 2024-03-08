@@ -1,7 +1,10 @@
+// import * as googArray from 'goog.array';
+import * as googAsserts from 'goog.asserts';
+import { Logger } from 'goog:goog.log';
 
 
-import goog.asserts from 'goog.asserts';
-import goog.log.Logger from 'goog.log.Logger';
+//import goog.asserts from 'goog.asserts';
+//import goog.log.Logger from 'goog.log.Logger';
 
 /**
  * @constructor
