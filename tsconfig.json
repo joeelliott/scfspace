@@ -9,7 +9,19 @@
     "outDir": "./dist"               // Redirect output structure to the directory
   },
   "include": [
-    "./**/*.ts" 
+    "./**/*"
+    "./ts/ai/*"
+    "./ts/global/*"
+    "./ts/graphics/*"
+    "./ts/input/*"
+    "./ts/layers/*"
+    "./ts/math/*"
+    "./ts/model/*"
+    "./ts/net/*"
+    "./ts/structs/*"
+    "./ts/time/*"
+    "./ts/ui/*"
+    
   ],
   "exclude": [
     "node_modules" 
