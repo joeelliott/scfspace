@@ -1,7 +1,9 @@
+import * as googArray from 'goog.array';
+import * as googAsserts from 'goog.asserts';
 
 
-import goog.array from 'goog.array';
-import goog.asserts from 'goog.asserts';
+//import goog.array from 'goog.array';
+//import goog.asserts from 'goog.asserts';
 
 /**
  * @constructor
