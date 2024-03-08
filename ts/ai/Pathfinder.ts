@@ -1,6 +1,6 @@
 import * as googObject from 'goog.object';
-import { Point } from './path/to/dotprod/math/Point';
-import { Heap } from './path/to/dotprod/structs/Heap';
+import { Point } from './ts/math/Point';
+import { Heap } from './ts/structs/Heap';
 
 
 // import goog.object from 'goog.object';
