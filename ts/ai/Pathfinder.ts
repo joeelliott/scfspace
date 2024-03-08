@@ -1,7 +1,11 @@
-import goog.object from 'goog.object';
+import * as googObject from 'goog.object';
+import { Point } from './path/to/dotprod/math/Point';
+import { Heap } from './path/to/dotprod/structs/Heap';
 
-import dotprod.math.Point from 'dotprod.math.Point';
-import dotprod.structs.Heap from 'dotprod.structs.Heap';
+
+// import goog.object from 'goog.object';
+//import dotprod.math.Point from 'dotprod.math.Point';
+//import dotprod.structs.Heap from 'dotprod.structs.Heap';
 
 /**
  * @constructor
