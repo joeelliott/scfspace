@@ -1,29 +1,43 @@
 {
   "compilerOptions": {
-    "target": "es6",                 // Set the JavaScript version for output files
-    "module": "commonjs",            // Specify the module code generation method
-    "strict": true,                  // Enable all strict type-checking options
-    "esModuleInterop": true,         // Enable interoperability between CommonJS and ES Modules
-    "skipLibCheck": true,            // Skip type checking of all declaration files (*.d.ts)
-    "forceConsistentCasingInFileNames": true, // Disallow inconsistently-cased references to the same file
-    "outDir": "./dist"               // Redirect output structure to the directory
+    "target": "es6",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "ai/*": ["ts/ai/*"],
+      "global/*": ["ts/global/*"],
+      "graphics/*": ["ts/graphics/*"],
+      "input/*": ["ts/input/*"],
+      "layers/*": ["ts/layers/*"],
+      "math/*": ["ts/math/*"],
+      "model/*": ["ts/model/*"],
+      "net/*": ["ts/net/*"],
+      "structs/*": ["ts/structs/*"],
+      "time/*": ["ts/time/*"],
+      "ui/*": ["ts/ui/*"],
+      "view/*": ["ts/view/*"],
+      "Application": ["ts/Application.ts"],
+      "Fonts": ["ts/Fonts.ts"],
+      "Jukebox": ["ts/Jukebox.ts"],
+      "Labs": ["ts/Labs.ts"],
+      "Listener": ["ts/Listener.ts"],
+      "Notifications": ["ts/Notifications.ts"],
+      "Palette": ["ts/Palette.ts"],
+      "ResourceManager": ["ts/ResourceManager.ts"],
+      "Sound": ["ts/Sound.ts"],
+      "types": ["ts/types.ts"],
+      "Viewport": ["ts/Viewport.ts"]
+    }
   },
   "include": [
-    "./**/*",
-    "./ts/ai/*",
-    "./ts/global/*",
-    "./ts/graphics/*",
-    "./ts/input/*",
-    "./ts/layers/*",
-    "./ts/math/*",
-    "./ts/model/*",
-    "./ts/net/*",
-    "./ts/structs/*",
-    "./ts/time/*",
-    "./ts/ui/*",
-    
+    "ts/**/*.ts"
   ],
   "exclude": [
-    "node_modules" 
+    "node_modules"
   ]
 }
