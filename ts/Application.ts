@@ -58,23 +58,14 @@ export default class Application {
   }
 }
 const startGame: EventListener = (event: Event) => {
-  // window.location.host is the website
   let socketUri = 'ws://' + window.location.host + '/dotproduct/v1/' + 'trench';
   if (window.location.protocol === 'https:') {
     socketUri = socketUri.replace('ws:', 'wss:');
   }
 
-  // Use a type assertion to ensure event.target is not null.
   const target = event.target as EventTarget;
   target.removeEventListener('click', startGame);
 
-  // Here you might also need a type assertion or type guard
-  // if Application expects the first parameter to be of a specific type.
-  new Application({ strategy: 'anonymous', accessToken: '' }, socketUri);
-};
-
-
-  event.target.removeEventListener('click', startGame);
   new Application({ strategy: 'anonymous', accessToken: '' }, socketUri);
 };
 
