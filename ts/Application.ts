@@ -57,18 +57,29 @@ export default class Application {
     }
   }
 }
-
-const startGame = (event : MouseEvent) => {
+const startGame: EventListener = (event: Event) => {
+  // window.location.host is the website
   let socketUri = 'ws://' + window.location.host + '/dotproduct/v1/' + 'trench';
-  if (window.location.protocol == 'https:') {
+  if (window.location.protocol === 'https:') {
     socketUri = socketUri.replace('ws:', 'wss:');
   }
+
+  // Use a type assertion to ensure event.target is not null.
+  const target = event.target as EventTarget;
+  target.removeEventListener('click', startGame);
+
+  // Here you might also need a type assertion or type guard
+  // if Application expects the first parameter to be of a specific type.
+  new Application({ strategy: 'anonymous', accessToken: '' }, socketUri);
+};
+
 
   event.target.removeEventListener('click', startGame);
   new Application({ strategy: 'anonymous', accessToken: '' }, socketUri);
 };
 
-// Global exports for Closure Compiler so these symbols don't get mangled.
-window['_main'] = () => {
-  (<HTMLDivElement> document.getElementById('anonymous')).addEventListener('click', startGame);
+(window as any)._main = () => {
+  const anonymousDiv = document.getElementById('anonymous') as HTMLDivElement;
+  anonymousDiv.addEventListener('click', startGame);
 };
+
