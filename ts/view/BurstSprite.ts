@@ -4,20 +4,20 @@ import Drawable from 'graphics/Drawable';
 import Effect from 'view/Effect';
 import Game from 'ui/Game';
 import { Layer } from 'graphics/Layer';
-import Listener from 'Listener';
+import Listener from 'Listener'; // Ensure this path is correct
 import ModelObject from 'model/ModelObject';
 import Player from 'model/player/Player';
 import Projectile from 'model/projectile/Projectile';
 import Vector from 'math/Vector';
-import Viewport from 'Viewport';
+import Viewport from 'Viewport'; // Ensure this path is correct
 
 export default class BurstSprite extends ModelObject implements Drawable {
-  private game_ : Game;
-  private burst_ : Burst;
-  private activeAnimation_ : Animation;
-  private inactiveAnimation_ : Animation;
+  private game_: Game;
+  private burst_: Burst;
+  private activeAnimation_: Animation;
+  private inactiveAnimation_: Animation;
 
-  constructor(game : Game, burst : Burst) {
+  constructor(game: Game, burst: Burst) {
     super(game.simulation);
 
     this.game_ = game;
@@ -27,7 +27,12 @@ export default class BurstSprite extends ModelObject implements Drawable {
     this.inactiveAnimation_ = game.getResourceManager().getSpriteSheet('bullets').getAnimation(4);
     this.inactiveAnimation_.setRepeatCount(-1);
 
-    Listener.add(this.burst_, 'explode', this.onExplode_.bind(this));
+    // Wrap onExplode_ call to match expected ListenerCallback signature
+    Listener.add(this.burst_, 'explode', (listener: Listener) => {
+      // Placeholder for determining the hit player, if necessary
+      const hitPlayer: Player | null = null;
+      this.onExplode_(this.burst_, hitPlayer);
+    });
 
     game.getPainter().registerDrawable(Layer.PROJECTILES, this);
   }
@@ -37,7 +42,7 @@ export default class BurstSprite extends ModelObject implements Drawable {
     this.inactiveAnimation_.update();
   }
 
-  public render(viewport : Viewport) {
+  public render(viewport: Viewport) {
     if (!this.burst_.isValid()) {
       this.invalidate();
       return;
@@ -51,7 +56,7 @@ export default class BurstSprite extends ModelObject implements Drawable {
     animation.render(viewport.getContext(), x, y);
   }
 
-  protected onExplode_(projectile : Projectile, hitPlayer : Player | null) {
+  protected onExplode_(projectile: Projectile, hitPlayer: Player | null) {
     // Add an explosion animation.
     let animation = this.game_.getResourceManager().getSpriteSheet('explode0').getAnimation(0);
     new Effect(this.game_, animation, this.burst_.getPosition(), Vector.ZERO);

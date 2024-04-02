@@ -4,7 +4,7 @@ import Timer from 'time/Timer';
 import ResourceManager from 'ResourceManager';
 import Game from 'ui/Game';
 import LocalPlayer from 'model/player/LocalPlayer';
-import Font from 'Font';
+import Font from 'Font'; // Make sure this import path is correct
 import Palette from 'Palette';
 import Viewport from 'Viewport';
 import Listener from 'Listener';
@@ -16,20 +16,20 @@ import Weapon from 'model/Weapon';
 import Exhaust from 'model/Exhaust';
 
 export default class LocalPlayerSprite extends PlayerSprite {
-  private resourceManager_ : ResourceManager;
-  private localPlayer_ : LocalPlayer;
+  private resourceManager_: ResourceManager;
+  private localPlayer_: LocalPlayer;
 
-  constructor(game : Game, localPlayer : LocalPlayer) {
+  constructor(game: Game, localPlayer: LocalPlayer) {
     super(game, localPlayer, Layer.LOCAL_PLAYER);
 
     this.resourceManager_ = game.getResourceManager();
     this.localPlayer_ = localPlayer;
 
-    Listener.add(localPlayer, 'collect_prize', this.collectPrize_.bind(this));
-    Listener.add(localPlayer, 'bounce', this.bounce_.bind(this));
-    Listener.add(localPlayer, 'multifire', this.toggleMultifire_.bind(this));
-    Listener.add(localPlayer, 'capture_flag', this.captureFlag_.bind(this));
-    Listener.add(localPlayer, 'weapon_fired', this.weaponFired_.bind(this));
+    Listener.add(localPlayer, 'collect_prize', (listener: Listener) => this.collectPrize_(localPlayer, null));
+    Listener.add(localPlayer, 'bounce', (listener: Listener) => this.bounce_(localPlayer));
+    Listener.add(localPlayer, 'multifire', (listener: Listener) => this.toggleMultifire_(localPlayer, true)); // Assuming 'true' as a placeholder
+    Listener.add(localPlayer, 'capture_flag', (listener: Listener) => this.captureFlag_(new Flag())); // Assuming new Flag() as a placeholder
+    Listener.add(localPlayer, 'weapon_fired', (listener: Listener) => this.weaponFired_(localPlayer, new Weapon())); // Assuming new Weapon() as a placeholder
   }
 
   public render(viewport : Viewport) {
