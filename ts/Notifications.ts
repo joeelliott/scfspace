@@ -7,38 +7,44 @@ enum Type {
   ENTER = 3
 }
 
+interface Message {
+  type: Type;
+  text: string;
+  ticks: number;
+}
+
 export default class Notifications {
   public static readonly Type = Type;
 
-  private static readonly MAX_MESSAGES_ : number = 5;
+  private static readonly MAX_MESSAGES_: number = 5;
 
-  private localPlayer_ : LocalPlayer;
-  private messages_ : Array<any>;
-  private insertIndex_ : number;
+  private localPlayer_: LocalPlayer;
+  private messages_: Array<Message>;
+  private insertIndex_: number;
 
-  constructor(localPlayer : LocalPlayer) {
+  constructor(localPlayer: LocalPlayer) {
     this.localPlayer_ = localPlayer;
     this.messages_ = [];
     this.insertIndex_ = 0;
   }
 
-  public addMessage(message : string) {
+  public addMessage(message: string) {
     this.addMessage_(Type.DEFAULT, message);
   }
 
-  public addPersonalMessage(message : string) {
+  public addPersonalMessage(message: string) {
     this.addMessage_(Type.PERSONAL, message);
   }
 
-  public addEnterMessage(message : string) {
+  public addEnterMessage(message: string) {
     this.addMessage_(Type.ENTER, message);
   }
 
-  public forEach(callback : (any, number) => void) {
+  public forEach(callback: (message: Message, index: number) => void) {
     this.messages_.forEach(callback);
   }
 
-  private addMessage_(type : Type, message : string) {
+  private addMessage_(type: Type, message: string) {
     this.messages_[this.insertIndex_] = {
       type: type,
       text: message,
