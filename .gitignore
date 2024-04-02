@@ -1,0 +1,11 @@
+js/*.js
+js/*.map
+js/**/*.js
+js/**/*.map
+node_modules/
+package-lock.json
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+/dist/
