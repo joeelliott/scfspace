@@ -5,6 +5,16 @@ import Image from 'graphics/Image';
 import Quadtree from 'structs/Quadtree';
 import { TileType, ObjectType } from 'types';
 
+interface MapSettings {
+  map: {
+    width: number;
+    height: number;
+    spawnRadius: number;
+    tileWidth: number;
+    tileHeight: number;
+  };
+}
+
 export default class Map {
   private static readonly COLLISION_EPSILON_ = 0.0001;
   private static readonly MAX_SPAWN_LOCATION_ATTEMPTS_ = 10;
@@ -18,17 +28,16 @@ export default class Map {
   private tileHeight_ : number;
   private quadtree_ : Quadtree;
 
-  constructor(settings : Object, mapData : any, tileProperties : Array<any>) {
+  constructor(settings: MapSettings, mapData: any, tileProperties: Array<any>) {
     this.mapData_ = mapData;
     this.tileProperties_ = tileProperties;
-    this.width_ = settings['map']['width'];
-    this.height_ = settings['map']['height'];
-    this.spawnRadius_ = settings['map']['spawnRadius'];
-    this.tileWidth_ = settings['map']['tileWidth'];
-    this.tileHeight_ = settings['map']['tileHeight'];
+    this.width_ = settings.map.width;
+    this.height_ = settings.map.height;
+    this.spawnRadius_ = settings.map.spawnRadius;
+    this.tileWidth_ = settings.map.tileWidth;
+    this.tileHeight_ = settings.map.tileHeight;
     this.quadtree_ = new Quadtree(mapData, this.width_, this.height_);
   }
-
   /** Returns the width of the map in number of tiles. */
   public getWidth() : number {
     return this.width_;
