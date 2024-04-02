@@ -4,7 +4,8 @@
   "description": "i ate eight gerbils",
   "main": "Application.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "build": "tsc",
+  "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "s_d",
   "license": "ISC",
