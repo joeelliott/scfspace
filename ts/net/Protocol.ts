@@ -1,12 +1,15 @@
+// Importing required modules and types
 import Vector from 'math/Vector';
-import Projectile from 'model/projectile/Projectile';
+import Projectile from 'model/projectile/Projectile'; // Note: This import seems unused
 import Timer from 'time/Timer';
 import Simulation from 'model/Simulation';
 import Player from 'model/player/Player';
 
-type PacketHandler = (packet : Array<any>) => void;
+// Type definition for packet handlers
+type PacketHandler = (packet: Array<any>) => void;
 
-const enum C2SPacketType_ {
+// Enum for client-to-server packet types
+enum C2SPacketType {
   LOGIN = 1,
   START_GAME,
   POSITION,
@@ -17,203 +20,166 @@ const enum C2SPacketType_ {
   PRIZE_COLLECTED,
   SET_PRESENCE,
   TUTORIAL_COMPLETED,
-  FLAG_CAPTURED
+  FLAG_CAPTURED,
 }
 
+// Protocol class definition
 class Protocol {
-  private static readonly PROTOCOL_VERSION_ : string = 'dotproduct.v1';
-  private static readonly CLOCK_SYNC_PERIOD_ : number = 2000;
+  private static readonly PROTOCOL_VERSION: string = 'dotproduct.v1';
+  private static readonly CLOCK_SYNC_PERIOD: number = 2000;
 
-  private socket_ : WebSocket;
-  private packetQueue_ : Array<string>;
-  private eventHandler_ : VoidFunction;
-  private handlers_ : Map<Protocol.S2CPacketType, Array<PacketHandler>>;
-  private syncTimer_ : number;
-  private serverTimeDelta_ : number;
-  private roundTripTime_ : number;
-  private simulation_ : Simulation | null;
+  private socket: WebSocket;
+  private packetQueue: Array<string> = [];
+  private eventHandler: VoidFunction = () => {};
+  private handlers: Map<number, Array<PacketHandler>> = new Map();
+  private syncTimer: number = 0;
+  private serverTimeDelta: number = 0;
+  private roundTripTime: number = 0;
+  private simulation: Simulation | null = null;
 
-  constructor(url) {
-    this.packetQueue_ = [];
-    this.eventHandler_ = function() {};
+  constructor(url: string) {
+    this.socket = new WebSocket(url, Protocol.PROTOCOL_VERSION);
+    this.socket.addEventListener('open', this.onOpen);
+    this.socket.addEventListener('error', this.onClose);
+    this.socket.addEventListener('close', this.onClose);
+    this.socket.addEventListener('message', this.onMessage);
 
-    this.handlers_ = new Map<Protocol.S2CPacketType, Array<PacketHandler>>();
-    for (let i = 0; i < 256; ++i) {
-      this.handlers_[i] = [];
-    }
-
-    this.syncTimer_ = 0;
-    this.serverTimeDelta_ = 0;
-    this.roundTripTime_ = 0;
-    this.simulation_ = null;
-
-    this.socket_ = new WebSocket(url, Protocol.PROTOCOL_VERSION_);
-    this.socket_.addEventListener('open', this.onOpen_.bind(this));
-    this.socket_.addEventListener('error', this.onClose_.bind(this));
-    this.socket_.addEventListener('close', this.onClose_.bind(this));
-    this.socket_.addEventListener('message', this.onMessage_.bind(this));
-
-    this.registerPacketHandler(Protocol.S2CPacketType.CLOCK_SYNC_REPLY, this.onClockSyncReply_.bind(this));
+    this.initializePacketHandlers();
   }
 
-  // Returns the number of milliseconds elapsed since the specified server timestamp.
-  public getMillisSinceServerTime(timestamp : number) : number {
-    if (!this.simulation_) {
-      return 0;
-    }
+  public getMillisSinceServerTime(timestamp: number): number {
+    if (!this.simulation) return 0;
 
-    let diff = timestamp - this.serverTimeDelta_;
-    if (diff < 0) {
-      diff += 0x100000000;
-    }
-    diff = this.asInt32_(this.simulation_.getTimeMillis()) - diff;
-    if (diff < 0) {
-      diff += 0x100000000;
-    }
+    let diff = timestamp - this.serverTimeDelta;
+    if (diff < 0) diff += 0x100000000;
+
+    diff = this.asInt32(this.simulation.getTimeMillis()) - diff;
+    if (diff < 0) diff += 0x100000000;
+
     return diff;
   }
 
-  public getRoundTripTime() : number {
-    return this.roundTripTime_;
+  public getRoundTripTime(): number {
+    return this.roundTripTime;
   }
 
-  public registerEventHandler(cb : VoidFunction) {
-    this.eventHandler_ = cb;
+  public registerEventHandler(cb: VoidFunction): void {
+    this.eventHandler = cb;
   }
 
-  public registerPacketHandler(packetType : Protocol.S2CPacketType, cb : (packet : Array<any>) => void) {
-    this.handlers_[packetType].push(cb);
-  }
-
-  public login(loginData : Object) {
-    this.send_([C2SPacketType_.LOGIN, loginData]);
-  }
-
-  public startGame(simulation : Simulation, ship : number) {
-    this.simulation_ = simulation;
-    this.send_([C2SPacketType_.START_GAME, ship, this.asInt32_(Date.now())]);
-    this.syncTimer_ = Timer.setInterval(this.syncClocks_.bind(this), Protocol.CLOCK_SYNC_PERIOD_);
-  }
-
-  public sendPosition = function(direction : number, position : Vector, velocity : Vector, isSafe : boolean, weaponData? : Object) {
-    let packet = [C2SPacketType_.POSITION, this.remoteTime_(), direction, position.x, position.y, velocity.x, velocity.y, isSafe];
-    if (weaponData) {
-      packet.push(weaponData);
+  public registerPacketHandler(packetType: number, cb: PacketHandler): void {
+    if (!this.handlers.has(packetType)) {
+      this.handlers.set(packetType, []);
     }
-    this.send_(packet);
+    this.handlers.get(packetType)?.push(cb);
   }
 
-  private syncClocks_() {
-    this.send_([C2SPacketType_.CLOCK_SYNC, this.asInt32_(Date.now())]);
+  public login(loginData: Object): void {
+    this.send([C2SPacketType.LOGIN, loginData]);
   }
 
-  private onClockSyncReply_ = function(packet : Array<any>) {
-    let clientTime0 = packet[0];
-    let serverTime = packet[1];
-    let rtt = this.asInt32_(Date.now()) - clientTime0;
-
-    // Correct for integer overflow since clock sync timestamps are fixed precision 32-bit integers.
-    if (rtt < 0) {
-      rtt += 0x100000000;
-    }
-
-    this.roundTripTime_ = rtt;
-
-    // Assume 60% of RTT is C2S latency.
-    this.serverTimeDelta_ = Math.floor(serverTime - clientTime0 - 0.6 * rtt);
-
-    if (this.serverTimeDelta_ < 0) {
-      this.serverTimeDelta_ += 0x100000000;
-    }
+  public startGame(simulation: Simulation, ship: number): void {
+    this.simulation = simulation;
+    this.send([C2SPacketType.START_GAME, ship, this.asInt32(Date.now())]);
+    this.syncTimer = Timer.setInterval(this.syncClocks, Protocol.CLOCK_SYNC_PERIOD);
   }
 
-  // |position| is the position of the local player at the time of death.
-  public sendDeath(position : Vector, killer : Player) {
-    this.send_([C2SPacketType_.PLAYER_DIED, position.x, position.y, killer.id]);
-  }
-
-  public sendChat(message : string) {
-    this.send_([C2SPacketType_.CHAT_MESSAGE, message]);
-  }
-
-  public sendShipChange(ship : number) {
-    this.send_([C2SPacketType_.SHIP_CHANGE, ship]);
-  }
-
-  public sendPrizeCollected(type : number, x : number, y : number) {
-    this.send_([C2SPacketType_.PRIZE_COLLECTED, type, x, y]);
-  }
-
-  public sendSetPresence(presence : Player.Presence) {
-    this.send_([C2SPacketType_.SET_PRESENCE, presence]);
-  }
-
-  public sendFlagCaptured(id : number) {
-    this.send_([C2SPacketType_.FLAG_CAPTURED, this.remoteTime_(), id]);
-  }
-
-  private onOpen_() {
-    for (let i = 0; i < this.packetQueue_.length; ++i) {
-      this.socket_.send(this.packetQueue_[i]);
-    }
-
-    this.packetQueue_ = [];
+  public sendPosition = (direction: number, position: Vector, velocity: Vector, isSafe: boolean, weaponData?: Object) => {
+    const packet = [C2SPacketType.POSITION, this.remoteTime(), direction, position.x, position.y, velocity.x, velocity.y, isSafe];
+    if (weaponData) packet.push(weaponData);
+    this.send(packet);
   };
 
-  private onClose_() {
-    Timer.clearInterval(this.syncTimer_);
-    this.syncTimer_ = 0;
-    this.packetQueue_ = [];
-
-    this.eventHandler_();
+  public sendDeath(position: Vector, killer: Player): void {
+    this.send([C2SPacketType.PLAYER_DIED, position.x, position.y, killer.id]);
   }
 
-  private onMessage_(event : MessageEvent) {
+  public sendChat(message: string): void {
+    this.send([C2SPacketType.CHAT_MESSAGE, message]);
+  }
+
+  public sendShipChange(ship: number): void {
+    this.send([C2SPacketType.SHIP_CHANGE, ship]);
+  }
+
+  public sendPrizeCollected(type: number, x: number, y: number): void {
+    this.send([C2SPacketType.PRIZE_COLLECTED, type, x, y]);
+  }
+
+  public sendSetPresence(presence: Player.Presence): void {
+    this.send([C2SPacketType.SET_PRESENCE, presence]);
+  }
+
+  public sendFlagCaptured(id: number): void {
+    this.send([C2SPacketType.FLAG_CAPTURED, this.remoteTime(), id]);
+  }
+
+  private onOpen = () => {
+    this.packetQueue.forEach((packet) => this.socket.send(packet));
+    this.packetQueue = [];
+  };
+
+  private onClose = () => {
+    Timer.clearInterval(this.syncTimer);
+    this.syncTimer = 0;
+    this.packetQueue = [];
+    this.eventHandler();
+  };
+
+  private onMessage = (event: MessageEvent) => {
     let obj;
     try {
-      let msg = event.data;
-      obj = JSON.parse(msg);
+      obj = JSON.parse(event.data);
     } catch (e) {
-      console.error('Error parsing JSON: ' + event.data + '\n' + e);
+      console.error(`Error parsing JSON: ${event.data}\n${e}`);
       return;
     }
 
-    let packetHandlers = this.handlers_[obj[0]];
+    const packetHandlers = this.handlers.get(obj[0]);
     if (packetHandlers) {
-      let slicedObj = obj.slice(1);
-      for (let i = 0; packetHandlers[i]; ++i) {
-        packetHandlers[i](slicedObj);
-      }
+      const slicedObj = obj.slice(1);
+      packetHandlers.forEach((handler) => handler(slicedObj));
     } else {
-      console.warn('Invalid packet from server: ' + obj);
+      console.warn(`Invalid packet from server: ${obj}`);
     }
-  }
+  };
 
-  private send_(data : Object) {
-    let packet = JSON.stringify(data);
-
-    if (this.socket_.readyState != WebSocket.OPEN) {
-      this.packetQueue_.push(packet);
+  private send = (data: Object) => {
+    const packet = JSON.stringify(data);
+    if (this.socket.readyState !== WebSocket.OPEN) {
+      this.packetQueue.push(packet);
     } else {
-      this.socket_.send(packet);
+      this.socket.send(packet);
     }
+  };
+
+  private asInt32 = (num: number): number => num | 0;
+
+  private remoteTime = (): number => this.simulation ? this.asInt32(this.simulation.getTimeMillis() + this.serverTimeDelta) : 0;
+
+  private syncClocks = () => {
+    this.send([C2SPacketType.CLOCK_SYNC, this.asInt32(Date.now())]);
+  };
+
+  private initializePacketHandlers() {
+    this.registerPacketHandler(Protocol.S2CPacketType.CLOCK_SYNC_REPLY, this.onClockSyncReply);
   }
 
-  private asInt32_(num : number) : number {
-    return num | 0;
-  }
+  private onClockSyncReply = (packet: Array<any>) => {
+    const clientTime0 = packet[0];
+    const serverTime = packet[1];
+    let rtt = this.asInt32(Date.now()) - clientTime0;
+    if (rtt < 0) rtt += 0x100000000;
 
-  private remoteTime_() : number {
-    if (!this.simulation_) {
-      return 0;
-    }
-
-    return this.asInt32_(this.simulation_.getTimeMillis() + this.serverTimeDelta_);
-  }
+    this.roundTripTime = rtt;
+    this.serverTimeDelta = Math.floor(serverTime - clientTime0 - 0.6 * rtt);
+    if (this.serverTimeDelta < 0) this.serverTimeDelta += 0x100000000;
+  };
 }
 
+// S2CPacketType enum defined within Protocol namespace for server-to-client packet types
 namespace Protocol {
-  export const enum S2CPacketType {
+  export enum S2CPacketType {
     LOGIN_REPLY = 1,
     PLAYER_ENTERED,
     PLAYER_LEFT,
@@ -226,8 +192,9 @@ namespace Protocol {
     PRIZE_SEED_UPDATE,
     PRIZE_COLLECTED,
     SET_PRESENCE,
-    FLAG_UPDATE
+    FLAG_UPDATE,
   }
 }
 
+// Exporting the Protocol class as default
 export default Protocol;
